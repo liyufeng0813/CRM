@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+
+{% block css %}
+    <link rel="stylesheet" href="/static/plugins/dropzone/dropzone.css">
+{% endblock %}
+
+
+{% block body %}
+
+<div class="container col-lg-8 col-lg-offset-2">
+
+    <div class="panel panel-info">
+        <div class="panel-heading">
+          学员报名审核
+        </div>
+        <div class="panel-body">
+
+            <div class="form-horizontal">
+
+                <h4>学员基本信息</h4>
+                {% for field in customer_modelform %}
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">
+                            {{ field.label }}
+                        </label>
+                        <div class="col-sm-9">
+                            {{ field }}
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <hr>
+
+                <h4>学员所报班级</h4>
+                {% for field in enrollment_modelform %}
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">
+                            {{ field.label }}
+                        </label>
+                        <div class="col-sm-9">
+                            {{ field }}
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <br>
+                <a href="/crm/customer/registration_reject/{{ enrollment_id }}/"><input type="button" value="审核不通过" class="btn btn-danger"></a>
+                <a href="/crm/customer/registration_payment/{{ enrollment_id }}"><input type="button" value="审核通过" class="btn btn-success pull-right"></a>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+

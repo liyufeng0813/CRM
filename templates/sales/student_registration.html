@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+
+{% block css %}
+    <link rel="stylesheet" href="/static/plugins/dropzone/dropzone.css">
+{% endblock %}
+
+
+{% block body %}
+
+<div class="container col-lg-8 col-lg-offset-2">
+
+    <div class="panel panel-info">
+        <div class="panel-heading">
+          学员报名表
+        </div>
+        <div class="panel-body">
+
+            <form class="form-horizontal" method="post" action="" onsubmit="return registrationCheck()">
+                {% csrf_token %}
+
+                {% if registration_modelform.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ registration_modelform.errors }}
+                    </div>
+                {% endif %}
+
+                {% if message.agreed %}
+                    <div class="alert alert-success" role="alert">
+                        {{ message.agreed }}
+                    </div>
+                {% endif %}
+
+                {% for field in registration_modelform %}
+                    <div class="form-group">
+                        <label for="inputEmail3" class="col-sm-2 control-label">
+                            {{ field.label }}
+                        </label>
+                        <div class="col-sm-9">
+                            {{ field }}
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <hr>
+
+                <div class="form-group">
+                    <label for="inputEmail3" class="col-sm-2 control-label">
+                        所报班级
+                    </label>
+                    <div class="col-sm-9">
+                        {{ enrollment_object.enrolled_class }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="inputEmail3" class="col-sm-2 control-label">
+                        课程费用
+                    </label>
+                    <div class="col-sm-9">
+                        {{ enrollment_object.enrolled_class.course.price }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="inputEmail3" class="col-sm-2 control-label">
+                        课程开课日期
+                    </label>
+                    <div class="col-sm-9">
+                        {{ enrollment_object.enrolled_class.start_date }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-sm-12">
+                        <pre>{{ enrollment_object.enrolled_class.contract_templace.template }}</pre>
+                    </div>
+                </div>
+
+                <label for="agreed">同意合同条款</label>
+                <input id="agreed" type="checkbox" name="contract_agreed">
+                <br>
+                <input type="submit" value="提交" class="btn btn-success pull-right">
+                <br>
+
+            </form>
+
+            <hr>
+
+            <div>
+                <span id="image_error"></span>
+            </div>
+            <form action="{{ request.path }}" class="dropzone" id="dropzone_image" style="border: 1.5px dashed lightblue; border-radius: 5px;">
+                {% csrf_token %}
+{#                <div class="fallback">#}
+{#                    <input name="file" type="file" multiple />#}
+{#                </div>#}
+                <div class="dz-default dz-message">
+                    <p>请上传身份证的正面和反面照片(共两张照片)</p>
+                    <p>照片的类型只能为：png, jpg, jpeg</p>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block  js %}
+
+<script src="/static/plugins/dropzone/dropzone.js"></script>
+<script src="/static/js/jquery.cookie.js"></script>
+<script>
+
+var myDropzone = new Dropzone('#dropzone_image');
+
+function registrationCheck() {
+    if (myDropzone.files.length < 2){
+        alert('至少上传两张照片，身份证的正面和反面照片。')
+        return false;
+    }
+    if($('form #agreed').prop('checked')){
+        $('form :disabled').prop('disabled', false);
+        return true;
+    }else{
+        alert('必须同意条款，才可提交！');
+        return false;
+    }
+}
+
+
+$(document).ready(function () {
+    Dropzone.options.myAwesomeDropzone = {
+        url: "{{ request.path }}",
+        method: 'POST',
+        headers: {'x-csrftoken': $.cookie('csrftoken')},
+        paramName: "file", // The name that will be used to transfer the file
+        maxFilesize: 2, // MB
+        maxFiles: 5,
+        acceptedFiles: ".jpg, .png,",
+        dictInvalidFileType: "你不能上传该类型文件,文件类型只能是*.jpg, *.png。",
+        uploadMultiple: true,
+        accept: function(file, done) {
+            if (file.name === "justinbieber.jpg") {
+                done("Naha, you don't.");
+            }
+            else {
+                done();
+            }
+        }
+    };
+})
+
+</script>
+
+{% endblock %}

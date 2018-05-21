@@ -1,0 +1,201 @@
+{% extends 'index.html' %}
+
+
+{% block css %}
+
+    <link rel="stylesheet" href="/static/plugins/dropzone/dropzone.css">
+    <style>
+        .delete{
+            cursor: pointer;
+        }
+        .delete:hover{
+            color: red;
+        }
+    </style>
+
+{% endblock %}
+
+
+{% block page_content %}
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            班级：{{ studyrecord_object.course_record.from_class }} | 节次：{{ studyrecord_object.course_record.day_num }}
+        </div>
+
+        <div class="panel-body">
+            <h4>课程大纲</h4>
+            <pre>{{ studyrecord_object.course_record.outline }}</pre>
+            <hr>
+
+            <h4>作业标题</h4>
+            <pre>{{ studyrecord_object.course_record.homework_title }}</pre>
+            <hr>
+
+            <h4>作业内容</h4>
+            <pre>{{ studyrecord_object.course_record.homework_content }}</pre>
+            <hr>
+
+            <h4>作业上传</h4>
+
+                <table class="table">
+                {% if file_list %}
+                    <thead id="thead_file">
+                        <tr>
+                            <th>已上传的文件</th>
+                            <th>大小</th>
+                            <th>上传时间</th>
+                            <th>是否删除</th>
+                        </tr>
+                    </thead>
+                {% else %}
+                    <thead class="hide" id="thead_file">
+                        <tr>
+                            <th>已上传的文件</th>
+                            <th>大小</th>
+                            <th>上传时间</th>
+                            <th>是否删除</th>
+                        </tr>
+                    </thead>
+                {% endif %}
+                    <tbody id="tbody_file">
+                        {% for file in file_list %}
+                        <tr>
+                            <td file="file_name">{{ file.file_name }}</td>
+                            <td file="file_size">{{ file.file_size }}</td>
+                            <td file="file_time">{{ file.file_time }}</td>
+                            <td file="file_delete" class="delete">删除</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+            <div class="" role="alert" id="upload_message">
+            </div>
+
+            <div id="drop_id" class="dropzone" style="border: 1.5px dashed lightblue; border-radius: 5px;"></div>
+
+        </div>
+
+    </div>
+
+{% endblock %}
+
+
+{% block js %}
+
+    <script src="/static/plugins/dropzone/dropzone.js"></script>
+    <script src="/static/js/jquery.cookie.js"></script>
+
+    <script>
+
+    $('#tbody_file').on('click', 'td', function () {
+        // 使用事件代理，监听整个tbody下的td标签。
+        // 点击删除即删除对应的文件
+        var filename;
+        $(this).siblings().each(function () {
+           if ($(this).attr('file') === 'file_name'){
+               filename = $(this).text();
+           }
+        });
+        $(this).parent().siblings();
+        var self = $(this).parent();
+        $.ajax({
+            url: "/student/homework_delete/{{ studyrecord_object.id }}/",
+            type: 'POST',
+            data: {'filename': filename, csrfmiddlewaretoken: '{{ csrf_token }}'},
+            success: function (value) {
+                // 如果成功删除文件，则把当前这个tr标签删掉
+                var data = JSON.parse(value);
+                if (data['status'] == 0){
+                    self.remove();
+                }
+            }
+        })
+    });
+
+    var myDropzone = new Dropzone("#drop_id", {
+        url: "{{ request.path }}",//文件提交地址
+        headers: {'x-csrftoken': $.cookie('csrftoken')},
+        method:"post",  //也可用put
+        paramName:"file", //默认为file
+        maxFiles:1,//一次性上传的文件数量上限
+        maxFilesize: 5, //文件大小，单位：MB
+        acceptedFiles: ".zip", //上传的类型
+        addRemoveLinks:true,
+        parallelUploads: 1,//一次上传的文件数量
+        //previewsContainer:"#preview",//上传图片的预览窗口
+        dictDefaultMessage:'请上传你的作业压缩包(只能为一个zip格式的压缩包)',
+        dictMaxFilesExceeded: "您最多只能上传1个文件！",
+        dictResponseError: '文件上传失败!',
+        dictInvalidFileType: "文件类型只能是*.zip。",
+        dictFallbackMessage:"浏览器不受支持",
+        dictFileTooBig:"文件过大上传文件最大支持.",
+        dictRemoveLinks: "删除",
+        dictCancelUpload: "取消",
+        init:function() {
+            /*this.on("addedfile", function(file) {
+                //上传文件时触发的事件
+                document.querySelector('div .dz-default').style.display = 'none';
+            });*/
+            this.on("success", function (file, data) {
+                //上传成功触发的事件
+                $('#upload_message').addClass('alert alert-success');
+                $('#upload_message').text('文件上传成功');
+                $('#thead_file').removeClass('hide');
+
+                // 文件上传成功后，根据返回值创建对应的tr标签，然后添加到tbody下。
+                var tbody = $('#tbody_file');
+                var file_list = JSON.parse(data)['file_list'];
+                for (var i in file_list){
+                    var tr = document.createElement('tr');
+                    var file_dict = file_list[i];
+                    for(var k in file_dict){
+                        var td = document.createElement('td');
+                        td.setAttribute('file', k);
+                        td.innerHTML = file_dict[k];
+                        tr.append(td);
+                    }
+                    var td = document.createElement('td');
+                    td.setAttribute('file', 'file_delete');
+                    td.innerHTML = '删除';
+                    td.setAttribute('class', 'delete');
+                    tr.append(td);
+                    tbody.append(tr);
+                }
+            });
+            this.on("error", function (file, data) {
+                //上传失败触发的事件
+                $('#upload_message').addClass('alert alert-danger');
+                $('#upload_message').text('文件上传失败');
+            });
+            this.on("removedfile", function (file) {
+                //删除文件时触发的方法
+                $.ajax({
+                    url: "/student/homework_delete/{{ studyrecord_object.id }}/",
+                    type: 'POST',
+                    data: {'filename': file.name, csrfmiddlewaretoken: '{{ csrf_token }}'},
+                    success: function (value) {
+                        var data = JSON.parse(value);
+                        if (data['status'] == 0){
+                            $('#upload_message').addClass('alert alert-warning');
+                            $('#upload_message').text('文件删除成功');
+                            var filename = data['filename'];
+                            $('#tbody_file td').each(function () {
+                                if ($(this).text() == filename){
+                                    $(this).parent().remove();
+                                }
+                            })
+                        }else{
+                            $('#upload_message').addClass('alert alert-danger');
+                            $('#upload_message').text('文件删除失败');
+                        }
+                    }
+                })
+            });
+        }
+    });
+
+    </script>
+
+{% endblock %}

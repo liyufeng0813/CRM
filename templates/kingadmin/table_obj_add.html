@@ -1,0 +1,178 @@
+{% extends 'kingadmin/table_index.html' %}
+
+{% load tags %}
+
+{% block css %}
+    <style>
+        .m2m-select{
+            height: 240px !important;
+            width: 100%;
+            border-radius: 3px;
+        }
+        span.m2m-all-select{
+            background-color: #dee9ee;
+            display: inline-block;
+            cursor: pointer;
+            padding: 3px 8px;
+            border-radius: 10px;
+            position: relative;
+            transform: translate(-50%, -50%);
+            left: 50%;
+            margin-top: 17px;
+        }
+        span.m2m-all-select:hover{
+            background-color: #a5acb1;
+        }
+        .single-move-all{
+            background-color: #dee9ee;
+            border-radius: 20px;
+            padding: 5px;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            left: 50%;
+            top: 50%;
+        }
+        .single-move{
+            background-color: #c0c9ce;
+            display: inline-block;
+            border-radius: 10px;
+            margin: 10px 1px;
+            cursor: pointer;
+            padding: 3px;
+        }
+        .single-move:hover{
+            background-color: #a5acb1;
+        }
+        .help_text{
+            font-size: 13px;
+            color: #929292;
+        }
+    </style>
+{% endblock %}
+
+
+{% block container %}
+    <div class="page-header">
+      <h4>添加 {% get_table_name admin_class %}</h4>
+    </div>
+
+    {% if form_object.errors %}
+        <div class="alert alert-danger" role="alert">
+            {{ form_object.errors }}
+        </div>
+    {% endif %}
+
+    <form class="form-horizontal" method="post" onsubmit="return additionSelected()">
+        {% csrf_token %}
+        {% for field in form_object %}
+          <div class="form-group">
+            <label class="col-sm-2 control-label" style="font-weight: normal">
+                {% if field.field.required %}
+                    <b>{{ field.label }}</b>
+                {% else %}
+                    {{ field.label }}
+                {% endif %}
+            </label>
+            <div class="col-sm-5">
+                {% if field.name in admin_class.filter_horizontal %}
+                    <div class="col-md-5">
+                        {% get_m2m_objects_select admin_class field form_object as m2m_select_list %}
+                        <select id="id_{{ field.name }}_from" multiple class="m2m-select">
+                            {% for obj in m2m_select_list %}
+                                <option value="{{ obj.id }}" ondblclick="moveElementTo(this, 'id_{{ field.name }}_from', 'id_{{ field.name }}_to')">
+                                    {{ obj.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <span class="m2m-all-select" onclick="moveAllElement('id_{{ field.name }}_from', 'id_{{ field.name }}_to')">
+                            <b>
+                                全选 >
+                            </b>
+                        </span>
+
+                    </div>
+                    <div class="col-md-1" style="height: 240px;">
+                        <div class="single-move-all">
+                            <span class="single-move" onclick="moveSingleElement('id_{{ field.name }}_from', 'id_{{ field.name }}_to')">
+                                <b>></b>
+                            </span>
+                            <span class="single-move" onclick="moveSingleElement('id_{{ field.name }}_to', 'id_{{ field.name }}_from')">
+                                <b><</b>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        {% get_m2m_objects_selected form_object field as m2m_selected_list %}
+                        <select tag="choices" name="{{ field.name }}" id="id_{{ field.name }}_to" multiple class="m2m-select">
+                            {% for obj in m2m_selected_list %}
+                                <option value="{{ obj.id }}" ondblclick="moveElementTo(this, 'id_{{ field.name }}_to', 'id_{{ field.name }}_from')">
+                                    {{ obj.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <span class="m2m-all-select" onclick="moveAllElement('id_{{ field.name }}_to', 'id_{{ field.name }}_from')">
+                            <b>
+                                < 删除全部
+                            </b>
+                        </span>
+
+                    </div>
+                {% else %}
+                    {{ field }}
+                    <span class="help_text">
+                        {{ field.help_text|safe }}
+                    </span>
+                {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+
+      <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+          <button type="submit" class="btn btn-success" style="margin-left: 240px;" formaction="{{ request.path }}">保存</button>
+        </div>
+      </div>
+
+    </form>
+
+{% endblock %}
+
+
+{% block js %}
+    <script>
+        function moveElementTo(self, id_from, id_to) {
+            // 双击option标签。把id=id_from这个标签 移动到 id=id_to标签处
+            $(self).attr('ondblclick', 'moveElementTo(this,' + "'" + id_to + "'" + ',' + "'" + id_from + "'" + ')');
+            $(self).appendTo('#' + id_to);
+            $(self).prop('selected', false);
+        }
+        function additionSelected() {
+            // 点击submit后，在表单提交数据之前，对需要提交的option标签 加上 seleted=true。保证选中的数据可以提交。
+            $('select[tag="choices"] option').each(function () {
+                $(this).prop('selected', true);
+            });
+            return true
+        }
+        function moveAllElement(id_from, id_to) {
+            // 遍历待选的select标签，把全部的option标签添加到 已选的select标签内。
+            $('#' + id_from + ' option').each(function () {
+                $(this).attr('ondblclick', 'moveElementTo(this,' + "'" + id_to + "'" + ',' + "'" + id_from + "'" + ')');
+                $(this).appendTo('#' + id_to);
+                $(self).prop('selected', false);    // 移动后清除标签的已选状态，页面好看一点。
+            })
+        }
+        function moveSingleElement(id_from, id_to) {
+            // 遍历id=id_from的这个待选select标签下面的option标签，如果selected属性为true，就把这个option标签添加到id=id_to的已选select标签下。
+            $('#' + id_from + ' option').each(function () {
+                if ($(this).prop('selected')){
+                    $(this).attr('ondblclick', 'moveElementTo(this,' + "'" + id_to + "'" + ',' + "'" + id_from + "'" + ')');
+                    $(this).appendTo('#' + id_to);
+                    $(this).prop('selected', false);
+                }
+            })
+        }
+    </script>
+
+{% endblock %}

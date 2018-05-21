@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+
+{% block css %}
+    <link rel="stylesheet" href="/static/plugins/dropzone/dropzone.css">
+{% endblock %}
+
+
+{% block body %}
+
+<div class="container col-lg-8 col-lg-offset-2">
+
+    <div class="panel panel-info">
+        <div class="panel-heading">
+          学员缴费
+        </div>
+        <div class="panel-body">
+
+            <form class="form-horizontal" method="post">
+                {% csrf_token %}
+
+                {% if errors %}
+                    <div class="alert alert-danger" role="alert">
+                        <ul>
+                            {% for error in errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                {% for field in customer_modelform %}
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">
+                            {{ field.label }}
+                        </label>
+                        <div class="col-sm-9">
+                            {{ field }}
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">客户</label>
+                    <div class="col-sm-9">
+                        <p>{{ customer_object }}</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">所报班级</label>
+                    <div class="col-sm-9">
+                        <p>{{ enrollment_object.enrolled_class }}</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">已缴费用</label>
+                    <div class="col-sm-9">
+                        <input type="text" placeholder="最少500" name="amount">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">课程顾问</label>
+                    <div class="col-sm-9">
+                        <p>{{ enrollment_object.consultant }}</p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <br>
+                <input type="submit" value="提交" class="btn btn-success pull-right">
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+

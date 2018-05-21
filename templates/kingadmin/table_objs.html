@@ -1,0 +1,177 @@
+{% extends 'kingadmin/table_index.html' %}
+{% load tags %}
+
+{% block css %}
+    <style>
+        .hide{
+            display: none;
+        }
+    </style>
+{% endblock %}
+
+
+
+
+{% block container %}
+
+    <div class="alert alert-danger hide" role="alert" id="action_hint">
+        <p></p>
+    </div>
+
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <h3 class="panel-title">
+                {% get_table_name admin_class %}
+                <a href="{{ request.path }}add" class="pull-right">
+                    <span class="glyphicon glyphicon-plus"> </span>
+                    添加一条信息
+                </a>
+            </h3>
+        </div>
+
+        <div style="padding: 10px;">
+            <form action="">
+                {% for filter_field in admin_class.list_filter %}
+                    <!--过滤表单，提交过滤信息-->
+                    <div class="col-lg-2">
+                        <span>{{ filter_field }}</span>
+                        {% render_filter_element filter_field admin_class filter_conditions %}
+                    </div>
+                {% endfor %}
+                <input type="text" name="searchData" value="{{ search_key }}" style="display: none;">
+                {% if admin_class.list_filter %}
+                    <div>
+                        <input type="submit" value="过滤" class="btn btn-success btn-sm"  style="margin-top: 20px;">
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- 执行 动作 表单 -->
+        <form action="" method="post" onsubmit="return ajaxSubmitAction()">
+            {% csrf_token %}
+            <div class="col-lg-3" style="padding: 10px; margin-bottom: 20px;">
+                <select name="action" id="action" class="form-control">
+                    <option value=""> ----- 选择执行的动作 ----- </option>
+                    {% for action_obj in admin_class.actions %}
+                        <option value="{{ action_obj }}">{% get_action_obj_verbose_name action_obj admin_class %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <input type="text" name="action_id" class="hide" id="action_id">
+
+            <div class="col-lg-1" style="padding: 10px; margin-bottom: 20px;">
+                <button class="btn btn-group-xs" type="submit">执行</button>
+            </div>
+        </form>
+
+        <div style="padding: 10px; margin-bottom: 20px;">
+            <div class="col-lg-5">
+                <form action="" method="get">
+                    <!--搜索表单，提交搜索条件-->
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="输入需要搜索的内容..." name="searchData" value="{{ search_key }}">
+                        <span class="input-group-btn">
+                            <input type="submit" class="btn btn-default" value="搜索">
+                        </span>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
+      <table class="table table-hover">
+        <thead>
+            <tr>
+                <th><input type="checkbox" onclick="checkAll(this)"></th>
+                {% for column in admin_class.list_display %}
+                    <th>{% build_header_column column order_by_key filter_conditions search_key admin_class %}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <td></td>
+                <td>
+                    <p style="font-size: 13px">总计 <b>{{ query_sets.paginator.count }}</b> 条</p>
+                </td>
+            </tr>
+        </tfoot>
+        <tbody>
+{#            {% get_query_sets admin_class as query_sets %}#}
+            {% for obj in query_sets %}
+            <tr>
+                <td style="width: 35px;"><input type="checkbox" sel="checkbox_select" value="{{ obj.id }}"></td>
+                {% build_row_element obj admin_class request %}
+            </tr>
+            {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <nav>
+      <ul class="pagination">
+          {% if query_sets.has_previous %}
+              <li><a href="{% get_filter_conditions_href query_sets.previous_page_number filter_conditions order_by_key search_key %}" aria-label="Previous"><span aria-hidden="true">上页</span></a></li>
+          {% else %}
+            <li class="disabled"><a href="javascript:void(0)" aria-label="Previous"><span aria-hidden="true">上页</span></a></li>
+          {% endif %}
+
+{#            两个样式的页码按钮#}
+{#          {% for page in query_sets.paginator.page_range %}#}
+{#              {% render_page_element page query_sets filter_conditions %}#}
+{#          {% endfor %}#}
+
+          {% build_page_button query_sets filter_conditions order_by_key search_key %}
+
+          {% if query_sets.has_next %}
+              <li><a href="{% get_filter_conditions_href query_sets.next_page_number filter_conditions order_by_key search_key %}" aria-label="Previous"><span aria-hidden="true">下页</span></a></li>
+          {% else %}
+              <li class="disabled"><a href="javascript:void(0)" aria-label="Previous"><span aria-hidden="true">下页</span></a></li>
+          {% endif %}
+      </ul>
+    </nav>
+
+{% endblock %}
+
+
+{% block js %}
+
+    <script>
+        $(function () {
+            // 修改
+            $('#enroll_id').prop('href', '{{ request.path }}'.replace('/customer', '/enrollment/add'))
+        });
+
+        function checkAll(self) {
+            if ($(self).prop('checked')){
+                $('tbody input[sel="checkbox_select"]').prop('checked', true);
+            }else{
+                $('tbody input[sel="checkbox_select"]').prop('checked', false);
+            }
+        }
+
+        function ajaxSubmitAction() {
+            var action_selected = $('#action').val();
+            var action_id_list = [];
+            $('tbody input[sel="checkbox_select"]:checked').each(function () {
+                action_id_list.push(($(this).val()));
+            });
+
+            if (action_id_list.length===0){
+                $('#action_hint p').html('至少选中一条数据或者多条数据进行操作！');
+                $('#action_hint').removeClass('hide');
+                return false;
+            }
+            if (!action_selected){
+                $('#action_hint p').html('必须选择一个执行方法！');
+                $('#action_hint').removeClass('hide');
+                return false;
+            }
+            var action_id = action_id_list.toString();
+            $('#action_id').val(action_id);
+            return true;
+        }
+    </script>
+    
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'kingadmin/table_index.html' %}
+{% load tags %}
+
+{% block container %}
+    <div class="page-header">
+      <h4>删除</h4>
+    </div>
+
+    <div style="margin-bottom: 30px;">
+        {% for model_object in model_objects %}
+        <span>
+            你确认想要删除 {% get_table_name model_object %} "{{ model_object }}"? <br>
+        </span>
+        {% endfor %}
+        下列所有相关的项目都将被删除：
+    </div>
+
+    {% build_related_element model_objects %}
+
+    <form action="" method="post">
+    {% csrf_token %}
+        <input type="hidden" name="delete_querysets" value="yes">
+        <input type="hidden" name="action" value="{{ request.action }}">
+        <input type="hidden" name="action_id" value="{{ request.action_id }}">
+        <input type="submit" value="删除" class="btn btn-danger">
+        <a href="{{ url }}"><input type="button" class="btn btn-default" value="取消"></a>
+    </form>
+{% endblock %}

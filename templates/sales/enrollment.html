@@ -1,0 +1,50 @@
+{% extends 'index.html' %}
+
+
+{% block page_content %}
+
+    <div>
+        <form action="" method="post" class="form-horizontal col-lg-6">
+            {% csrf_token %}
+
+            {% if enrollment_modelform.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ enrollment_modelform.errors }}
+                </div>
+            {% endif %}
+
+            {% if message.customer_enrollment_link %}
+                <div class="alert alert-info" role="alert">
+                    客户报名链接：{{ message.customer_enrollment_link }}
+                <br>
+                    此链接两小时内有效，请尽快处理。
+                </div>
+            {% endif %}
+
+            {% if message.agreed %}
+                <div class="alert alert-info" role="alert">
+                    {{ message.agreed }}
+                </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="inputEmail3" class="col-sm-2 control-label">客户QQ</label>
+                <div class="col-sm-10">
+                    {{ customer_object }}
+                </div>
+            </div>
+            {% for field in enrollment_modelform %}
+                <div class="form-group">
+                    <label for="inputEmail3" class="col-sm-2 control-label">{{ field.label }}</label>
+                    <div class="col-sm-10">
+                        {{ field }}
+                    </div>
+                </div>
+            {% endfor %}
+
+            <input type="submit" value="下一步" class="btn btn-default pull-right">
+        </form>
+
+    </div>
+
+{% endblock %}
